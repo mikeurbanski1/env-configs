@@ -408,7 +408,7 @@ set-user-org() {
 		echo "No org specified"
 		return
 	fi
-	echo "Setting mike@bridgecrew.io to $1"
+	echo "Setting mike@btest.com to $1"
 	# redacted command
 }
 
@@ -476,7 +476,7 @@ alias k="kubectl"
 alias kcfg="kubectl config"
 alias kctx="kubectl config use-context"
 alias kconfx="export KUBECONFIG=/Users/mikeurbanski/.kube/x-config"
-alias kpai="kconfx" # when I am REALLY lazy
+alias kx="kconfx" # when I am REALLY lazy
 alias kconflocal="export KUBECONFIG=/Users/mikeurbanski/.kube/config"
 KUBE_BASH=(--stdin --tty -- /bin/bash) # use with kexec to get interactive shell
 KUBE_SH=(--stdin --tty -- /bin/sh)
