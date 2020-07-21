@@ -268,17 +268,13 @@ get_git_prompt_info() {
 
 get_aws_prompt_info() {
 
-	if [[ -n "$AWS_CUSTOMER" ]]; then
-		local acctName=CUST
-	elif [[ -n "$AWS_PROFILE" ]]; then
+	if [[ -n "$AWS_PROFILE" ]]; then
 		local acctName=$AWS_PROFILE
 	else
 		local acctName=dev
 	fi
 
-	if [[ $acctName == CUST ]]; then
-		local clr=196
-	elif [[ $acctName == prod ]]; then
+	if [[ $acctName == prod ]]; then
 		local clr=202
 	else
 		local clr=220
@@ -422,16 +418,6 @@ list-accounts() {
 		return
 	fi
 	# redacted command
-}
-
-assume-customer-role() {
-	if [[ -z "$1" ]]; then
-		echo "No account specified"
-		return
-	fi
-	# redacted command
-	aws sts get-caller-identity
-	export AWS_CUSTOMER=$1
 }
 
 alias dev="aws-profile dev"
@@ -590,7 +576,6 @@ unset-aws() {
 	unset AWS_SESSION_TOKEN
 	unset AWS_DEFAULT_PROFILE
 	unset AWS_PROFILE
-	unset AWS_CUSTOMER
 
 	if [[ "$1" != "silent" ]]; then
 		aws sts get-caller-identity
