@@ -1,21 +1,18 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
-export PATH="/Users/mikeurbanski/Library/Python/3.7/bin:$PATH:/Applications/Postgres.app/Contents/Versions/11/bin"
-export NVM_DIR=~/.nvm
-
 # Path to your oh-my-zsh installation.
 export ZSH="/Users/mikeurbanski/.oh-my-zsh"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/robbyrussell/oh-my-zsh/wiki/Themes
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
 ZSH_THEME="robbyrussell"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in ~/.oh-my-zsh/themes/
+# a theme from this variable instead of looking in $ZSH/themes/
 # If set to an empty array, this variable will have no effect.
 # ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
 
@@ -36,7 +33,7 @@ ZSH_THEME="robbyrussell"
 # export UPDATE_ZSH_DAYS=13
 
 # Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS=true
+# DISABLE_MAGIC_FUNCTIONS="true"
 
 # Uncomment the following line to disable colors in ls.
 # DISABLE_LS_COLORS="true"
@@ -61,30 +58,21 @@ ZSH_THEME="robbyrussell"
 # "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
 # or set a custom format using the strftime function format specifications,
 # see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
+HIST_STAMPS="yyyy-mm-dd"
 
 # Would you like to use another custom folder than $ZSH/custom?
 # ZSH_CUSTOM=/path/to/new-custom-folder
 
 # Which plugins would you like to load?
-# Standard plugins can be found in ~/.oh-my-zsh/plugins/*
-# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(brew git docker docker-compose docker-machine kubectl python aws)
 
 source $ZSH/oh-my-zsh.sh
 
-# For some reason, plugin autocompletion doesn't work unless a new zsh is launched. This launches a new one once.
-# The downside is that every terminal appears as an active command.
-if [[ -z $__EXEC_ZSH_AGAIN ]]; then
-	export __EXEC_ZSH_AGAIN=NO  # This makes this statement not repeat infinitely.
-	# echo "Launching new zsh"
-	zsh
-fi
-
-# The workaround above causes the AWS plugin to set the prompt twice. This resets it.
-RPROMPT='$(aws_prompt_info)'
+# echo "done with plugins"
 
 # User configuration
 
@@ -112,29 +100,341 @@ RPROMPT='$(aws_prompt_info)'
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-source ~/zsh-git-prompt/zshrc.sh
-PROMPT='%B%{$fg[white]%}!%! %{$fg[red]%}%1~ %b$(git_super_status)> %b'
-
-setopt auto_cd
-cdpath=(/Users/mikeurbanski/Documents/AWS /Users/mikeurbanski/)
-
-# Set the right prompt; change on window resize.
-# set_rps1()
-# {
-#     (( cols = $COLUMNS * 3/10 ))
-#     RPROMPT=" %${cols}<..<%~%<<"
-# }
-# set_rps1
-
-
-# TRAPWINCH ()
-# {
-#     set_rps1
-# }
-
 ZRC=~/.zshrc
 
+export GPG_TTY=$(tty)
+export HOME=/Users/mikeurbanski
 
+
+### PROMPT SETUP
+
+# GIT PROMPT
+# http://www.jukie.net/~bart/blog/20071219221358
+#PROMPT=%(?:%{%}➜ :%{%}➜ ) %{$fg[cyan]%}%c%{$reset_color%} $(git_prompt_info)
+typeset -ga preexec_functions
+typeset -ga precmd_functions
+typeset -ga chpwd_functions
+
+setopt prompt_subst
+
+parse_git_branch() {
+	git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+}
+
+# This was a failed attempt to try to only update the git prompt after it might've changed, but it's fundamentally broken,
+# because commands to change git prompts or things like that will invalidate what was previously set.
+# if [[ ${preexec_functions[(ie)zsh_preexec_update_git_vars]} -gt ${#preexec_functions} ]]; then
+# 	preexec_functions+='zsh_preexec_update_git_vars'
+# fi
+
+# zsh_preexec_update_git_vars() {
+
+# 	# local found_git=false
+#  #    case "$(history $HISTCMD | cut -d ' ' -f 8-)" in 
+#  #        git*)
+# 	# 	;&
+#  #        co*)
+# 	# 	;&
+# 	# 	commit*)
+# 	# 	;&
+# 	# 	add*)
+# 	# 	;&
+# 	# 	fp*)
+# 	# 	;&
+# 	# 	newbranch*)
+# 	# 	;&
+# 	# 	status*)
+# 	# 	;&
+# 	# 	gitpush*)
+# 	# 	# echo "git command"
+# 	# 	zsh_chpwd_update_git_vars
+# 	# 	found_git=true
+# 	# 	echo "found git in first try"
+# 	# 	;;
+#  #    esac
+
+#  #    if [[ "$found_git" != "true" ]]; then
+#  #    	case "$(history $(expr $HISTCMD - 1) | head -n 1 | cut -d ' ' -f 8-)" in 
+# 	#         git*)
+# 	# 		;&
+# 	#         co*)
+# 	# 		;&
+# 	# 		commit*)
+# 	# 		;&
+# 	# 		add*)
+# 	# 		;&
+# 	# 		fp*)
+# 	# 		;&
+# 	# 		newbranch*)
+# 	# 		;&
+# 	# 		status*)
+# 	# 		;&
+# 	# 		gitpush*)
+# 	# 		# echo "git command"
+# 	# 		zsh_chpwd_update_git_vars
+# 	# 		found_git=true
+# 	# 		;;
+# 	#     esac
+# 	# fi
+# }
+
+# chpwd_functions+='zsh_chpwd_update_git_vars'
+# zsh_chpwd_update_git_vars() {
+#     export __CURRENT_GIT_BRANCH="$(parse_git_branch)"
+
+#     if [[ -z "$__CURRENT_GIT_BRANCH" ]]; then return; fi
+
+#     export __GIT_STAGED_COUNT=$(git diff --staged --name-status | wc -l | trim)
+#     export __GIT_UNSTAGED_COUNT=$(git diff --name-status | wc -l | trim)
+#     export __GIT_UNTRACKED_COUNT=$(git status --porcelain | grep '^??' | wc -l | trim)
+# }
+
+get_git_prompt_info() {
+
+	local __CURRENT_GIT_BRANCH="$(parse_git_branch)"
+
+	if [[ -z "$__CURRENT_GIT_BRANCH" ]]; then
+		> ~/.prompt_info <<< "__GIT_PROMPT_LENGTH=0"
+		echo ""
+		return
+	fi
+
+	# local __GIT_STAGED_COUNT=$(git diff --staged --name-status | wc -l | trim)
+ #    local __GIT_UNSTAGED_COUNT=$(git diff --name-status | wc -l | trim)
+ #    local __GIT_UNTRACKED_COUNT=$(git status --porcelain | grep '^??' | wc -l | trim)
+
+ 	local staged_count=0
+ 	local unstaged_count=0
+ 	local unmerged_count=0
+ 	local untracked_count=0
+ 	local total_count=0
+
+ 	local promptLength=$(expr 3 + ${#__CURRENT_GIT_BRANCH}) # 3 for (|)
+
+ 	local prompt_str="%{$fg_bold[white]%}(%{$fg_bold[magenta]%}$__CURRENT_GIT_BRANCH%{$fg_bold[white]%}|"
+
+ 	git status --porcelain | cut -c1-2 | {IFS=''; while read -r L; do
+
+	 		if [[ "$L[2]" == "M" ]]; then
+	 			unstaged_count=$(expr $unstaged_count + 1)
+	 			total_count=$(expr $total_count + 1)
+	 		elif [[ "$L[1]" == "U" ]]; then
+	 			unmerged_count=$(expr $unmerged_count + 1)
+	 			total_count=$(expr $total_count + 1)
+	 		elif [[ "$L[1]" == "M" || "$L[1]" == "A" ]]; then
+	 			staged_count=$(expr $staged_count + 1)
+	 			total_count=$(expr $total_count + 1)
+	 		elif [[ "$L" == "??" ]]; then
+	 			untracked_count=$(expr $untracked_count + 1)
+	 			total_count=$(expr $total_count + 1)
+	 		else
+	 			echo "Unexpected git status combination: $L" 1>&2;
+	 		fi
+
+	 	done
+	}
+
+	if [[ $total_count == 0 ]]; then
+		prompt_str+="%{$fg_bold[green]%}✔"
+		promptLength=$(expr $promptLength + 1)
+	else
+		if [[ $staged_count != 0 ]]; then
+			prompt_str+="%{%F{161}%}"'●'$staged_count
+			promptLength=$(expr $promptLength + 1 + ${#staged_count})
+		fi
+
+		if [[ $unmerged_count != 0 ]]; then
+			prompt_str+="%{%F{214}%}"'✖'$unmerged_count
+			promptLength=$(expr $promptLength + 1 + ${#unmerged_count})
+		fi
+
+		if [[ $unstaged_count != 0 ]]; then
+			prompt_str+="%{%F{039}%}"'✚'$unstaged_count
+			promptLength=$(expr $promptLength + 1 + ${#unstaged_count})
+		fi
+
+		if [[ $untracked_count != 0 ]]; then
+			prompt_str+="%{$reset_color%}+$untracked_count"
+			promptLength=$(expr $promptLength + 1 + ${#untracked_count})
+		fi
+	fi
+
+	# echo "__GIT_PROMPT_LENGTH=$promptLength" 1>&2;
+	> ~/.prompt_info <<< "export __GIT_PROMPT_LENGTH=$promptLength"
+	# export __GIT_PROMPT_LENGTH=$promptLength
+    
+    echo "$prompt_str%{$fg_bold[white]%})"
+}
+
+get_aws_prompt_info() {
+
+	if [[ -n "$AWS_CUSTOMER" ]]; then
+		local acctName=CUST
+	elif [[ -n "$AWS_PROFILE" ]]; then
+		local acctName=$AWS_PROFILE
+	else
+		local acctName=dev
+	fi
+
+	if [[ $acctName == CUST ]]; then
+		local clr=196
+	elif [[ $acctName == prod ]]; then
+		local clr=202
+	else
+		local clr=220
+	fi
+
+	local promptLength=$(expr 6 + ${#acctName})
+	# echo "__AWS_PROMPT_LENGTH=$promptLength" 1>&2;
+	>> ~/.prompt_info <<< "export __AWS_PROMPT_LENGTH=$promptLength"
+
+	# export __AWS_PROMPT_LENGTH=$promptLength
+
+	echo "%{%F{220}%}(aws:%{%F{$clr}%}$acctName%{%F{220}%})"
+}
+
+get_truncated_wd() {
+	local maxlen=$1
+	local curdir=${2:-$(print -P %~)}
+	# echo "$2"
+	# echo "Curdir: $curdir"
+	# echo "Max len: $maxlen"
+
+	if [[ "$curdir" == "/" ]]; then
+		echo "/"
+		return
+	elif [[ "$curdir" == '~' || "$curdir" == "$HOME" ]]; then
+		echo '~'
+		return
+	fi
+
+	local curlen=0
+	local dirstr=''
+
+	while true; do
+		local base=`basename $curdir`
+
+		# If we make it this far, then we know we have room for one more character.
+		if [[ "$base" == "/" ]]; then
+			# Actually nothing to do here, since we already added the leading slash last iteration
+			break
+		elif [[ "$base" == '~' || "$base" == "$HOME" ]]; then
+			dirstr='~'"$dirstr"
+			curlen=`expr 1 + $curlen`
+			break
+		fi
+		local newlen=`expr 1 + $curlen + ${#base}`
+		# echo "newlen: $newlen"
+
+		# using >= accounts for the extra 1 character that we would add
+		if [[ $newlen -ge $maxlen ]]; then
+
+			# We do need to check if we happen to now be at root
+			if [[ $newlen == $maxlen && `dirname $curdir` == '/' ]]; then
+				# echo "we just barely made it!"
+			else
+				# echo "new dir str is too long"
+				dirstr="…$dirstr"
+
+				# If we can fit it, add a leading / or ~
+				if [[ ${#dirstr} -lt $maxlen ]]; then
+					if [[ "$curdir" == '~'* || "$curdir" == "$HOME"* ]]; then
+						# if STILL smaller, then add / after ~
+						if [[ ${#dirstr} -lt `expr $maxlen - 1` ]]; then
+							dirstr='~/'"$dirstr"
+						else
+							dirstr='~'"$dirstr"
+						fi
+					elif [[ "$curdir" == '/'* ]]; then
+						dirstr='/'"$dirstr"
+					fi
+				fi
+				break
+			fi
+		fi
+
+		dirstr="/$base$dirstr"
+		# echo "New dirstr: $dirstr"
+		curdir=`dirname $curdir`
+		# echo "New curdir: $curdir"
+		curlen=$newlen
+	done
+
+	# echo "dir: $dirstr"
+	# echo "len: ${#dirstr}"
+	echo "$dirstr"
+}
+
+get_wd_prompt() {
+	# 2 for the Check/X plus space, 1 for the space before git/aws
+	local promptLength=$(expr 3 + $__AWS_PROMPT_LENGTH + $__GIT_PROMPT_LENGTH)
+	# echo "$promptLength" 1>&2;
+
+	local maxlen=`expr $COLUMNS - $promptLength`
+	# local curdir=`print -P %~`
+	# local wdlen=0
+	# while true; do
+	# 	local base=`basename $curdir`
+	# 	local newlen=`expr $wdlen + ${#base}`
+
+	# done
+
+	# echo $(expr $__AWS_PROMPT_LENGTH + $__GIT_PROMPT_LENGTH)
+	get_truncated_wd $maxlen
+}
+
+create_custom_prompt() {
+	__GIT_PROPT_STR=$(get_git_prompt_info)
+	__AWS_PROMPT_STR=$(get_aws_prompt_info)
+	eval $(cat ~/.prompt_info)
+
+	echo "%(?:%{$fg_bold[green]%}✓ :%{$fg_bold[red]%}✖ )%{$fg[cyan]%}$(get_wd_prompt) %{$reset_color%}$__GIT_PROPT_STR$__AWS_PROMPT_STR\n%{$fg_bold[white]%}>> %{$reset_color%}"
+}
+
+PROMPT='$(create_custom_prompt)'
+
+# PROMPT='%(?:%{$fg_bold[green]%}✓ :%{$fg_bold[red]%}✖ )%{$fg[cyan]%}%~% $(get_wd_prompt) {$reset_color%} $__GIT_PROPT_STR$__AWS_PROMPT_STR
+# %{$fg_bold[white]%}>> %{$reset_color%}'
+
+# rm ~/.prompt_info
+
+export PYTHONSTARTUP=/Users/mikeurbanski/misc/python_test/startup.py
+
+#################################### Work Stuff ###########################
+
+PLATFORM=$HOME/platform/platform
+PROWLER=$HOME/platform/prowler
+CHECKOV=$HOME/platform/checkov
+DEVTOOLS=$PLATFORM/devTools
+
+set-user-org() {
+	if [[ -z "$1" ]]; then
+		echo "No org specified"
+		return
+	fi
+	echo "Setting mike@bridgecrew.io to $1"
+	# redacted command
+}
+
+list-accounts() {
+	if [[ -z "$1" ]]; then
+		echo "No org specified"
+		return
+	fi
+	# redacted command
+}
+
+assume-customer-role() {
+	if [[ -z "$1" ]]; then
+		echo "No account specified"
+		return
+	fi
+	# redacted command
+	aws sts get-caller-identity
+	export AWS_CUSTOMER=$1
+}
+
+alias dev="aws-profile dev"
 
 #################################### Aliases ####################################
 
@@ -144,6 +444,9 @@ alias small="open ~/Documents/Terminal\ settings/Basic\ -\ Small.terminal"
 alias sublime="open -a Sublime\ Text"
 alias chrome="open -a Google\ Chrome"
 alias fullpath="realpath"
+alias ll="ls -lah"
+alias lr="ls -lAtrh"
+alias lt="ls -lAth"
 
 ########## Python ##########
 alias activate="venv_activate"
@@ -186,16 +489,14 @@ alias kdesc="kubectl describe"
 alias k="kubectl"
 alias kcfg="kubectl config"
 alias kctx="kubectl config use-context"
-alias kconfpai="export KUBECONFIG=/Users/mikeurbanski/.kube/pai-config"
-alias kpai="kconfpai" # when I am REALLY lazy
+alias kconfx="export KUBECONFIG=/Users/mikeurbanski/.kube/x-config"
+alias kpai="kconfx" # when I am REALLY lazy
 alias kconflocal="export KUBECONFIG=/Users/mikeurbanski/.kube/config"
-alias login="kpai && ppl login"
 KUBE_BASH=(--stdin --tty -- /bin/bash) # use with kexec to get interactive shell
 KUBE_SH=(--stdin --tty -- /bin/sh)
 
 # This allows `tree` to use colors
 eval $(gdircolors)
-
 
 #################################### Functions ####################################
 
@@ -216,42 +517,6 @@ mc() { # Make a directory and change to it
 
 setsecretvar() {
 	read -rs "$1?Enter $1: "
-}
-
-mycd() {
-	CD $*
-
-	if [[ -n "$__ACTIVATED_VENV" ]]; then
-		case $PWD/ in
-			$__ACTIVATED_VENV/*) return;;
-		esac
-	fi
-
-	if [[ "$AUTO_DEACTIVATE" == "true" && "$__VENV_ACTIVATED" == "true" ]]; then
-		echo "Deactivated $__ACTIVATED_VENV"/venv
-		deactiv
-	fi
-
-	if [[ "$AUTO_ACTIVATE" == "true" ]]; then
-		venv_activate notsilent silent
-	fi
-}
-
-function chpwd() {
-	if [[ -n "$__ACTIVATED_VENV" ]]; then
-		case $PWD/ in
-			$__ACTIVATED_VENV/*) return;;
-		esac
-	fi
-
-	if [[ "$AUTO_DEACTIVATE" == "true" && "$__VENV_ACTIVATED" == "true" ]]; then
-		echo "Deactivated $__ACTIVATED_VENV"/venv
-		deactiv
-	fi
-
-	if [[ "$AUTO_ACTIVATE" == "true" ]]; then
-		venv_activate notsilent silent
-	fi
 }
 
 function awkcut() {
@@ -287,40 +552,6 @@ function decode() {
 	echo -n "$1" | base64 -D
 }
 
-function bastion() {
-	if [[ "$1" == "REDACTED" ]]; then
-		local HOST=$REDACTED
-		local SSH_KEY=/Users/mikeurbanski/.ssh/REDACTED
-		local SCP_KEY=/Users/mikeurbanski/.ssh/REDACTED
-	else
-		local HOST=$REDACTED
-		local SSH_KEY=/Users/mikeurbanski/.ssh/REDACTED
-		local SCP_KEY=/Users/mikeurbanski/.ssh/REDACTED
-	fi
-
-	ssh-add $SSH_KEY
-
-	scp -i $SSH_KEY $SCP_KEY REDACTED@$HOST:/tmp
-	ssh -i $SSH_KEY REDACTED@$HOST
-	ssh -i $SSH_KEY REDACTED@$HOST rm /tmp/$(basename $SCP_KEY)
-}
-
-########## Command autocompletion ##########
-
-_bastion() {
-
-	integer ret=1
-	local -a args
-	args+=(
-	    'prod:prod1'
-	    'staging:staging1'
-	)
-	_describe 'bastion' args && ret=0
-	return ret
-}
-
-compdef _bastion bastion
-
 ########## Python ##########
 
 pyscript() {
@@ -329,60 +560,6 @@ pyscript() {
 	python -m $CMD $*
 }
 
-if [[ -z "$__VENV_ACTIVATED" ]]; then
-	__VENV_ACTIVATED="false"
-fi
-
-venv_activate() {
-	__SILENT_ACTIVATE=false
-	__SILENT_FAIL=false
-	if [[ "$1" == "silent" ]]; then
-		__SILENT_ACTIVATE=true
-	fi
-
-	if [[ "$2" == "silent" ]]; then
-		__SILENT_FAIL=true
-	fi
-
-	__ORIG_DIR="`pwd`"
-	__DIR="$__ORIG_DIR"
-	while [[ "$__DIR" != '/' ]]; do
-		if [[ -a "$__DIR/venv/bin/activate" ]]; then
-			source "$__DIR/venv/bin/activate"
-			if [[ "$__SILENT_ACTIVATE" == "false" ]]; then
-				echo "Activated $__DIR/venv"
-			fi
-			__ACTIVATED_VENV="$__DIR"
-			__VENV_ACTIVATED=true
-			return
-		fi
-		__DIR=$(dirname "$__DIR")
-	done
-	if [[ "$__SILENT_FAIL" == "false" ]]; then
-		echo "No virtualenv found."
-	fi
-	__VENV_ACTIVATED=false
-}
-
-deactiv() {
-	if typeset -f deactivate > /dev/null; then
-	  deactivate
-	fi
-	
-	__VENV_ACTIVATED=false
-	unset __ACTIVATED_VENV
-}
-
-venv_activate notsilent silent # initial venv activation if in a python tree
-
-if [[ -z "$AUTO_ACTIVATE" ]]; then
-	export AUTO_ACTIVATE=true
-fi
-
-if [[ -z "$AUTO_DEACTIVATE" ]]; then
-	export AUTO_DEACTIVATE=true
-fi
-
 ########## Git ##########
 
 commit() {
@@ -390,7 +567,7 @@ commit() {
 		shift
 	fi
 	
-	git commit -m "$1"
+	git commit -S -m "$1"
 }
 
 add() {
@@ -413,17 +590,21 @@ unset-aws() {
 	unset AWS_SESSION_TOKEN
 	unset AWS_DEFAULT_PROFILE
 	unset AWS_PROFILE
+	unset AWS_CUSTOMER
+
+	if [[ "$1" != "silent" ]]; then
+		aws sts get-caller-identity
+	fi
 }
 
 aws-profile() {
-	unset-aws
+	unset-aws silent
 
-	if [[ "$1" == "prod" ]]; then
-		export AWS_PROFILE=awsaml-REDACTED
-		export AWS_DEFAULT_PROFILE=awsaml-REDACTED
-	elif [[ "$1" == "ds" ]]; then
-		export AWS_PROFILE=awsaml-REDACTED
-		export AWS_DEFAULT_PROFILE=awsaml-REDACTED
+	export AWS_PROFILE=$1
+	export AWS_DEFAULT_PROFILE=$1
+
+	if [[ "$2" != "silent" ]]; then
+		aws sts get-caller-identity
 	fi
 }
 
@@ -467,7 +648,10 @@ set_aws() {
 	export AWS_ACCESS_KEY_ID
 	export AWS_SECRET_ACCESS_KEY
 	export AWS_SESSION_TOKEN
+
+	aws sts get-caller-identity
 }
+alias set-aws="set_aws"
 
 parse_aws() {
 	while read LINE; do
@@ -483,9 +667,7 @@ parse_aws() {
 		fi
 	done
 }
-
-
-
+alias parse-aws="parse_aws"
 
 function help() {
 	if [[ -z "$1" ]]; then
@@ -543,14 +725,11 @@ function help() {
 		echo "http://zsh.sourceforge.net/Doc/Release/Conditional-Expressions.html"
 	fi
 }
-
+# echo "here"
 autoload -U compinit && compinit
-
-source $(brew --prefix nvm)/nvm.sh
+# echo "here2"
 eval $(thefuck --alias)
-
-
-
-
-# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
-export PATH="$PATH:$HOME/.rvm/bin"
+# echo "here3"
+source $(brew --prefix nvm)/nvm.sh 2> /dev/null
+# echo "here4"
+nvm use --delete-prefix v14.5.0 --silent
