@@ -1,0 +1,302 @@
+# If you come from bash you might have to change your $PATH.
+# export PATH=$HOME/bin:/usr/local/bin:$PATH
+
+# Path to your oh-my-zsh installation.
+export ZSH="/Users/mikeurbanski/.oh-my-zsh"
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+ZSH_THEME="robbyrussell"
+
+# Set list of themes to pick from when loading at random
+# Setting this variable when ZSH_THEME=random will cause zsh to load
+# a theme from this variable instead of looking in $ZSH/themes/
+# If set to an empty array, this variable will have no effect.
+# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+# HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to automatically update without prompting.
+# DISABLE_UPDATE_PROMPT="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+# ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# You can set one of the optional three formats:
+# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# or set a custom format using the strftime function format specifications,
+# see 'man strftime' for details.
+HIST_STAMPS="yyyy-mm-dd"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(brew git docker docker-compose docker-machine kubectl python aws)
+
+source $ZSH/oh-my-zsh.sh
+compinit
+
+# echo "done with plugins"
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Compilation flags
+# export ARCHFLAGS="-arch x86_64"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+
+ZRC=~/.zshrc
+
+unset RPROMPT
+
+### PROMPT SETUP
+
+# GIT PROMPT
+# http://www.jukie.net/~bart/blog/20071219221358
+#PROMPT=%(?:%{%}➜ :%{%}➜ ) %{$fg[cyan]%}%c%{$reset_color%} $(git_prompt_info)
+typeset -ga preexec_functions
+typeset -ga precmd_functions
+typeset -ga chpwd_functions
+
+setopt prompt_subst
+
+test_lt() {
+
+	local val=1
+
+	while : ; do
+		echo $val
+		if [[ $val -gt 20 ]]; then
+			break
+		fi
+		val=$(expr $val + 1)
+	done
+
+
+
+	if [[ "$1" -lt 20 ]]; then
+		echo "< 20"
+	else
+		echo ">= 20"
+	fi
+}
+
+get_aws_prompt_info() {
+
+	if [[ "$__HIDE_AWS" == "true" ]]; then
+		>> ~/.prompt_info <<< "export __AWS_PROMPT_LENGTH=0"
+		echo ""
+		return
+	fi
+
+	if [[ -n "$AWS_CUSTOMER" ]]; then
+		local acctName=CUST
+	elif [[ -n "$__AWS_ALIAS" ]]; then
+		local acctName=$__AWS_ALIAS
+	else
+		>> ~/.prompt_info <<< "export __AWS_PROMPT_LENGTH=0"
+		return
+	fi
+
+	# eval $(aws sts get-caller-identity | jq -r '"____ACCOUNT=" + .Account, "____ARN=" + .Arn')
+
+	if [[ $acctName == CUST || $acctName == iloan || $acctName == springleaf ]]; then
+		local clr=196
+	elif [[ $acctName == prod || $acctName == "app"* ]]; then
+		local clr=202
+	else
+		local clr=220
+	fi
+
+	local promptLength=$(expr 6 + ${#acctName})
+	# echo "__AWS_PROMPT_LENGTH=$promptLength" 1>&2;
+	>> ~/.prompt_info <<< "export __AWS_PROMPT_LENGTH=$promptLength"
+
+	# export __AWS_PROMPT_LENGTH=$promptLength
+
+	echo "%{%F{220}%}(aws:%{%F{$clr}%}$acctName%{%F{220}%})"
+}
+
+get_truncated_wd() {
+	local maxlen=$1
+	local curdir=${2:-$(print -P %~)}
+	# echo "$2"
+	# echo "Curdir: $curdir"
+	# echo "Max len: $maxlen"
+
+	if [[ "$curdir" == "/" ]]; then
+		echo "/"
+		return
+	elif [[ "$curdir" == '~' || "$curdir" == "$HOME" ]]; then
+		echo '~'
+		return
+	fi
+
+	local curlen=0
+	local dirstr=''
+
+	while true; do
+		local base=`basename $curdir`
+
+		# If we make it this far, then we know we have room for one more character.
+		if [[ "$base" == "/" ]]; then
+			# Actually nothing to do here, since we already added the leading slash last iteration
+			break
+		elif [[ "$base" == '~' || "$base" == "$HOME" ]]; then
+			dirstr='~'"$dirstr"
+			curlen=`expr 1 + $curlen`
+			break
+		fi
+		local newlen=`expr 1 + $curlen + ${#base}`
+		# echo "newlen: $newlen"
+
+		# using >= accounts for the extra 1 character that we would add
+		if [[ $newlen -ge $maxlen ]]; then
+
+			# We do need to check if we happen to now be at root
+			if [[ $newlen == $maxlen && `dirname $curdir` == '/' ]]; then
+				# echo "we just barely made it!"
+			else
+				# echo "new dir str is too long"
+				dirstr="…$dirstr"
+
+				# If we can fit it, add a leading / or ~
+				if [[ ${#dirstr} -lt $maxlen ]]; then
+					if [[ "$curdir" == '~'* || "$curdir" == "$HOME"* ]]; then
+						# if STILL smaller, then add / after ~
+						if [[ ${#dirstr} -lt `expr $maxlen - 1` ]]; then
+							dirstr='~/'"$dirstr"
+						else
+							dirstr='~'"$dirstr"
+						fi
+					elif [[ "$curdir" == '/'* ]]; then
+						dirstr='/'"$dirstr"
+					fi
+				fi
+				break
+			fi
+		fi
+
+		dirstr="/$base$dirstr"
+		# echo "New dirstr: $dirstr"
+		curdir=`dirname $curdir`
+		# echo "New curdir: $curdir"
+		curlen=$newlen
+	done
+
+	# echo "dir: $dirstr"
+	# echo "len: ${#dirstr}"
+	echo "$dirstr"
+}
+
+get_wd_prompt() {
+	# 2 for the Check/X plus space, 1 for the space before git/aws
+	local promptLength=$(expr 3 + $__AWS_PROMPT_LENGTH + $__GIT_PROMPT_LENGTH + $__ORG_PROMPT_LENGTH + $__CKV_PROMPT_LENGTH + $__TAG_PROMPT_LENGTH)
+	# echo "$promptLength" 1>&2;
+
+	local maxlen=`expr $COLUMNS - $promptLength`
+	# local curdir=`print -P %~`
+	# local wdlen=0
+	# while true; do
+	# 	local base=`basename $curdir`
+	# 	local newlen=`expr $wdlen + ${#base}`
+
+	# done
+
+	# echo $(expr $__AWS_PROMPT_LENGTH + $__GIT_PROMPT_LENGTH)
+	get_truncated_wd $maxlen
+}
+
+get_current_org_prompt() {
+	if [[ -f "$HOME/.bc_org" && "$__HIDE_ORG" != "true" ]]; then
+		local org=$(cat "$HOME/.bc_org")
+		echo "%{%F{199}%}($org)"
+		local promptLength=$(expr 2 + ${#org})
+		>> ~/.prompt_info <<< "export __ORG_PROMPT_LENGTH=$promptLength"
+	else
+		echo ""
+		>> ~/.prompt_info <<< "export __ORG_PROMPT_LENGTH=0"
+	fi
+}
+
+create_custom_prompt() {
+	# __GIT_PROPT_STR=$(get_git_prompt_info)
+	__AWS_PROMPT_STR=$(get_aws_prompt_info)
+	#__CKV_ENV_PROMPT_STR=$(get_checkov_env_prompt)
+	eval $(cat ~/.prompt_info)
+
+	echo "%(?:%{$fg_bold[green]%}✓ :%{$fg_bold[red]%}✖ )%{$fg[cyan]%}$(get_wd_prompt) %{$reset_color%}$(git-prompt)$__AWS_PROMPT_STR\n%{%F{76}%}>> %{%b%}"
+}
+
+PROMPT='$(create_custom_prompt)'
+
+preexec() {
+	# echo -n "\\e[40;34m"
+
+	echo -n "$reset_color"
+}
+
+alias hide-checkov=__HIDE_CKV=true
+alias show-checkov=__HIDE_CKV=false
+
+
+# PROMPT='%(?:%{$fg_bold[green]%}✓ :%{$fg_bold[red]%}✖ )%{$fg[cyan]%}%~% $(get_wd_prompt) {$reset_color%} $__GIT_PROPT_STR$__AWS_PROMPT_STR
+# %{$fg_bold[white]%}>> %{$reset_color%}'
+
+# rm ~/.prompt_info
