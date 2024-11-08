@@ -1,20 +1,30 @@
 source ~/.zsh_prompt
 
 export GPG_TTY=$(tty)
-export HOME=/Users/mikeurbanski
+export HOME=/home/mike
 export PYTHONSTARTUP=$HOME/startup.py
 
 export GOPATH=$HOME/go-workspace # don't forget to change your path correctly!
-export GOBIN=$GOPATH/bin
-export GOROOT=/usr/local/opt/go/libexec
-export PATH=$PATH:$GOPATH/bin
-export PATH=$PATH:$GOROOT/bin
+# export GOBIN=$GOPATH/bin
+# export GOROOT=/usr/local/opt/go/libexec
+# export PATH=$PATH:$GOPATH/bin
+# export PATH=$PATH:$GOROOT/bin
+export PATH=$PATH:/home/mike/.local/bin
 export NODE_OPTIONS=--max-old-space-size=8192
+
+export ANONYMUS="/mnt/c/Users/mike/anonymus"
 
 # PYTHON_TEST_PYTHON=~/.local/share/virtualenvs/python_test-LHT7_Exf/bin/python
 # PYTHON_TEST_DIR=~/misc/python_test
 
 #################################### Aliases ####################################
+
+alias SRC="source ~/.zshrc"
+alias ZRC="sublime '\\\\wsl$\Ubuntu\home\mike\.zshrc'"
+
+alias sublime="/mnt/d/Programs/Sublime\ Text/sublime_text.exe"
+alias chrome="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+alias ll='ls -la'
 
 ########## git ##########
 alias status="git status"
@@ -87,10 +97,27 @@ eval $(gdircolors)
 
 ########## Misc. terminal ##########
 
-source $(brew --prefix nvm)/nvm.sh 2> /dev/null
+vscode() {
+	/mnt/c/Users/mike/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe "$@" &
+}
 
-# nvm use --delete-prefix v14.5.0 --silent
-nvm use 16.20.1
+mc() {
+	if [[ -z "$1" ]]; then
+		return
+	fi
+
+	mkdir -p "$1"
+	cd "$1"
+}
+
+mt() {
+	if [[ -z "$1" ]]; then
+		return
+	fi
+
+	mkdir -p "/tmp/$1"
+	cd "/tmp/$1"
+}
 
 #################################### Aliases ####################################
 
@@ -102,7 +129,6 @@ alias epoch="$SA_TOOLS_PYTHON $SA_TOOLS/python/shell_utils/epoch_converter.py"
 alias cpdir='pwd | pbcopy'
 alias yaml-to-json='$SA_TOOLS_PYTHON $SA_TOOLS/python/shell_utils/yaml_to_json.py'
 alias mv="mv -i"
-alias bc="chrome https://www.bridgecrew.cloud"
 alias build="yarn run build"
 alias test="yarn run test"
 
@@ -604,3 +630,8 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[green]%}✔"
 
 source ~/.git-prompt.zsh
 
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+nvm use v20.10.0
