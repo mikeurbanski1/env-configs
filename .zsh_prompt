@@ -2,7 +2,7 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
 # Path to your oh-my-zsh installation.
-export ZSH="/Users/mikeurbanski/.oh-my-zsh"
+export ZSH="/home/mike/.oh-my-zsh"
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -247,10 +247,19 @@ get_truncated_wd() {
 
 get_wd_prompt() {
 	# 2 for the Check/X plus space, 1 for the space before git/aws
-	local promptLength=$(expr 3 + $__AWS_PROMPT_LENGTH + $__GIT_PROMPT_LENGTH + $__ORG_PROMPT_LENGTH + $__CKV_PROMPT_LENGTH + $__TAG_PROMPT_LENGTH)
+	local branch="$(git branch |& grep '*' | cut -b 3-)"
+	if [[ "$branch" == "fatal:"* ]]; then
+		local promptLength=0
+	else
+	    # 4 for the parentheses, |, and checkbox, plus another 8 as a general buffer 
+		local promptLength="$(expr 12 + ${#branch})"
+	fi
+
+	# local promptLength=$(expr 3 + $__AWS_PROMPT_LENGTH + $__GIT_PROMPT_LENGTH + $__ORG_PROMPT_LENGTH + $__CKV_PROMPT_LENGTH + $__TAG_PROMPT_LENGTH)
 	# echo "$promptLength" 1>&2;
 
-	local maxlen=`expr $COLUMNS - $promptLength`
+	# -2 for the previous command status plus space
+	local maxlen=`expr $COLUMNS - $promptLength - 2`
 	# local curdir=`print -P %~`
 	# local wdlen=0
 	# while true; do
@@ -277,11 +286,11 @@ get_current_org_prompt() {
 
 create_custom_prompt() {
 	# __GIT_PROPT_STR=$(get_git_prompt_info)
-	__AWS_PROMPT_STR=$(get_aws_prompt_info)
+	# __AWS_PROMPT_STR=$(get_aws_prompt_info)
 	#__CKV_ENV_PROMPT_STR=$(get_checkov_env_prompt)
 	eval $(cat ~/.prompt_info)
 
-	echo "%(?:%{$fg_bold[green]%}✓ :%{$fg_bold[red]%}✖ )%{$fg[cyan]%}$(get_wd_prompt) %{$reset_color%}$(git-prompt)$__AWS_PROMPT_STR\n%{%F{76}%}>> %{%b%}"
+	echo "%(?:%{$fg_bold[green]%}✓ :%{$fg_bold[red]%}X )%{$fg[cyan]%}$(get_wd_prompt) %{$reset_color%}$(git-prompt)\n%{%F{76}%}>> %{%b%}"
 }
 
 PROMPT='$(create_custom_prompt)'
