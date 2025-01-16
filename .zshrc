@@ -12,6 +12,7 @@ export GOPATH=$HOME/go-workspace # don't forget to change your path correctly!
 export PATH=$PATH:/home/mike/.local/bin
 export NODE_OPTIONS=--max-old-space-size=8192
 
+export BIKETAG="$HOME/projects/biketag"
 export ANONYMUS="/mnt/c/Users/mike/anonymus"
 
 # PYTHON_TEST_PYTHON=~/.local/share/virtualenvs/python_test-LHT7_Exf/bin/python
@@ -29,12 +30,14 @@ alias ll='ls -la'
 ########## git ##########
 alias status="git status"
 # alias newbranch="git checkout -b"
+alias rename-branch="git branch -M"
 alias co="git checkout"
-alias fp="git fetch && git pull"
-alias fpm="git checkout main && git fetch && git pull"
+alias fp="git fetch && pull"
+alias fpm="git checkout main && git fetch && pull"
+alias mfp="git checkout main && git fetch && pull"
 alias merge="git merge"
 alias mm="git merge main"
-alias pull="git pull"
+# alias pull="git pull"
 
 ########## curl ##########
 alias cpost="curl -X POST"
@@ -91,7 +94,7 @@ trans() {
 }
 
 # This allows `tree` to use colors
-eval $(gdircolors)
+# eval $(gdircolors)
 
 #################################### Functions ####################################
 
@@ -373,6 +376,15 @@ gitpush() {
 	git push origin $(git branch | grep '*' | cut -b 3-) "$@"
 }
 
+pull() {
+	git pull origin $(git branch | grep '*' | cut -b 3-) "$@"
+}
+
+create-pr() {
+	url="https://github.com/mikeurbanski1/biketag-pnpm/compare/$(git branch | grep '*' | cut -b 3-)?expand=1"
+	cmd.exe /C start "$url"
+}
+
 open-in-vcs() {
 
   local file=""
@@ -497,6 +509,23 @@ lambda-func-to-py-env() {
 	echo "(Copied to clipboard)"
 }
 
+#### biketag
+
+update-pending-tag() {
+	if [[ -z "$1" ]]; then
+		echo "Usage: update-pending-game game-name"
+		return 1
+	fi
+
+	local game_id="$(mongosh mongodb://172.25.160.1:27017/biketag --eval 'JSON.stringify(db.games.find().toArray())' | jq -r ".[] | select(.name == \"$1\") | ._id")"
+	echo $game_id
+	pnpm update-pending-tag -g "$game_id"
+}
+
+alias start-server
+
+### help and autocomplete
+
 _help() {
 	integer ret=1
 	local -a args
@@ -517,6 +546,21 @@ _branches() {
 }
 
 compdef _branches branch
+
+_pnpm() {
+	integer ret=1
+	local -a args=("${(@f)$(cat package.json| jq -r '.scripts | keys[]')}")
+	_describe 'branches' args && ret=0
+}
+
+compdef _pnpm pnpm
+
+_games() {
+	integer ret=1
+	local -a args=("${(@f)$(mongosh mongodb://172.25.160.1:27017/biketag --eval 'JSON.stringify(db.games.find().toArray())' | jq -r ".[].name")}")
+	_describe 'branches' args && ret=0
+}
+compdef _games update-pending-tag
 
 function help() {
 	if [[ -z "$1" ]]; then
@@ -575,23 +619,19 @@ function help() {
 	fi
 }
 
-if [[ "$(ssh-add -l)" == "The agent has no identities." ]]; then
-	echo "\033[1;31mDon't forget to run ssh-add, you fool"
-fi
-
-
-alias ckv="PYTHONPATH=${CHECKOV} ${CHECKOV_PYTHON} -m checkov.main"
-alias ckv3="PYTHONPATH=${CHECKOV3} ${CHECKOV3_PYTHON} -m checkov.main"
+# if [[ "$(ssh-add -l)" == "The agent has no identities." ]]; then
+# 	echo "\033[1;31mDon't forget to run ssh-add, you fool"
+# fi
 
 commit() {
-	echo -n "$(security find-generic-password -a gpg -s gpg -w)" | pbcopy
+	# echo -n "$(security find-generic-password -a gpg -s gpg -w)" | pbcopy
 	if [[ "$1" == "-m" ]]; then
 		shift
 	fi
 	local message="$1"
 	shift
 
-	git commit -S --no-verify  -m "$message" "$@"
+	git commit --no-verify -m "$message" "$@"
 }
 
 get-vscode-command() {
@@ -627,11 +667,21 @@ ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg_bold[white]%}("
 ZSH_THEME_GIT_PROMPT_SUFFIX="%{$fg_bold[white]%})"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg_bold[green]%}✔"
 
-
 source ~/.git-prompt.zsh
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-nvm use v20.10.0
+nvm use v23.1.0
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/mike/google-cloud-sdk/path.zsh.inc' ]; then . '/home/mike/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/mike/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/mike/google-cloud-sdk/completion.zsh.inc'; fi
+
+# echo "checking for redis server"
+# if ! sudo service redis-server status; then
+# 	sudo service redis-server start
+# fi
